@@ -32,12 +32,11 @@ jobs:
 
       # Step 3: Run the Lacework SCA scan on the main branch and generate SARIF output
       - name: Run Lacework SCA Scan on Main Branch
-        run: lacework sca scan ./ -f sarif -o /tmp/lacework-scan.sarif
+        run: lacework sca scan ./ -f sarif -o lacework-scan.sarif
         # Scan the main branch code, output in SARIF format, and save to /tmp/lacework-scan.sarif
 
-      # Step 4: Upload the SARIF file for further use or analysis
-      - name: Upload SARIF File
-        uses: actions/upload-artifact@v3  # Use the upload artifact action to save the SARIF file
+      # Step 4: Upload the SARIF file to GitHub Code Scanning
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2  # Use the GitHub action to upload SARIF
         with:
-          name: lacework-sca-sarif-report  # Name of the uploaded artifact
-          path: /tmp/lacework-scan.sarif  # Path to the SARIF file
+          sarif_file: lacework-scan.sarif  # Path to the SARIF file
