@@ -1,0 +1,44 @@
+name: Pull Request Workflow
+
+on:
+  pull_request:
+    branches:
+      - main  # Specify your target branch here
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Install the Lacework CLI and SCA component
+      - name: Install Lacework CLI
+        run: |
+          curl https://raw.githubusercontent.com/lacework/go-sdk/main/cli/install.sh | bash
+          lacework configure -a ${{ secrets.LW_ACCOUNT }}.lacework.net -k ${{ secrets.LW_API_KEY }} -s ${{ secrets.LW_API_SECRET }} --noninteractive
+          lacework component install sca
+
+      # Step 2: Check out the source branch (head of the pull request)
+      - name: Checkout source branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }} # Checkout the source branch
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 3: Run the Lacework SCA scan on the source branch
+      - name: Run Lacework SCA Scan on Source Branch
+        run: lacework sca scan ./ -f sarif -o lacework-scan-source.sarif
+
+      # Step 4: Check out the target branch of the pull request
+      - name: Checkout target branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }} # Checkout the target branch
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 5: Run the Lacework SCA scan on the target branch
+      - name: Run Lacework SCA Scan on Target Branch
+        run: lacework sca scan ./ -f sarif -o lacework-scan-target.sarif
+
+      # Step 6: Compare results from the two scans
+      - name: Compare SARIF Files
+        run: lacework sca compare --new lacework-scan-source.sarif --old lacework-scan-target.sarif
